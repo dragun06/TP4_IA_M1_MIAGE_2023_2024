@@ -39,14 +39,27 @@ async function getMessage() {
 
 async function getResponseFromServer(prompt) {
     try {
-        // On envoie le contenu du prompt dans un FormData (eq. formulaires multipart)
+        if (prompt.startsWith("/")) {
+            const spaceIndex = prompt.indexOf(" ");
+            const command = prompt.substring(1, spaceIndex);
+            const text = prompt.substring(spaceIndex + 1);
+
+            switch (command) {
+                case "image":
+                    console.log(`Je génère une image Dall-E avec comme demande "${text}".`);
+                    return;
+                case "song":
+                    console.log(`Je demande une chanson avec comme sujet '${text}'.`);
+                    return;
+                default:
+                    console.log(`Commande '${command}' non reconnue.`);
+                    return; 
+            }
+        }
+
         const promptData = new FormData();
         promptData.append('prompt', prompt);
 
-        // Envoi de la requête POST par fetch, avec le FormData dans la propriété body
-        // côté serveur on récupèrera dans req.body.prompt la valeur du prompt,
-        // avec nodeJS on utilisera le module multer pour récupérer les donénes 
-        // multer gère les données multipart/form-data
         const response = await fetch(endpointURL, {
             method: 'POST',
             body: promptData
@@ -55,24 +68,46 @@ async function getResponseFromServer(prompt) {
         const data = await response.json();
 
         console.log(data);
-        const chatGptReponseTxt = data.choices[0].message.content;
-        // On cree un element p pour la réponse
-        const pElementChat = document.createElement('p');
-        pElementChat.textContent = chatGptReponseTxt;
-        // On ajoute la réponse dans le div output
-        outputElement.append(pElementChat);
+        const chatGptResponseTxt = data.choices[0].message.content;
 
-        // Ajout dans l'historique sur la gauche
+        // Conteneur pour la conversation
+        const conversationContainer = document.createElement('div');
+        conversationContainer.classList.add('conversation');
+
+        // Créer et ajouter le prompt
+        const pElementPrompt = document.createElement('p');
+        pElementPrompt.textContent = "Prompt: " + prompt;
+        pElementPrompt.classList.add('prompt');
+        conversationContainer.appendChild(pElementPrompt);
+
+        // Créer et ajouter la réponse
+        const pElementChat = document.createElement('p');
+        pElementChat.textContent = chatGptResponseTxt;
+        pElementChat.classList.add('response');
+        conversationContainer.appendChild(pElementChat);
+
+        // Ajouter le conteneur de conversation à outputElement
+        outputElement.appendChild(conversationContainer);
+
+        // Ajout dans l'historique sur la gauche (prompt et réponse)
         if (data.choices[0].message.content) {
-            const pElement = document.createElement('p');
-            pElement.textContent = inputElement.value;
-            pElement.onclick = () => {
-                inputElement.value = pElement.textContent;
+            const historyEntry = document.createElement('div');
+            const pElementHistoryPrompt = document.createElement('p');
+            pElementHistoryPrompt.textContent = "Prompt: " + prompt;
+            pElementHistoryPrompt.style.fontWeight = "bold";
+            const pElementHistoryResponse = document.createElement('p');
+            pElementHistoryResponse.textContent = chatGptResponseTxt;
+
+            historyEntry.appendChild(pElementHistoryPrompt);
+            historyEntry.appendChild(pElementHistoryResponse);
+            historyEntry.onclick = () => {
+                inputElement.value = prompt; // Permet de réutiliser le prompt
             };
-            historyElement.append(pElement);
+            historyElement.append(historyEntry);
         }
     } catch (error) {
         console.log(error);
     }
 }
+
 

@@ -115,3 +115,37 @@ nav {
     overflow: hidden;
     box-shadow: rgb(38, 57, 77) 0 20px 30px -10px;
 }
+
+#loading {
+    display: none;
+    /* Ajoutez ici des styles pour votre indicateur de chargement */
+  }
+  
+  .history {
+    /* Styles pour l'historique des chats */
+    margin-top: 20px;
+    border-top: 1px solid #ccc;
+    padding-top: 20px;
+  }
+  .history .entry {
+    margin-bottom: 10px;
+  }
+  
+  .conversation {
+    border-bottom: 1px solid #ccc; /* Séparation */
+    margin-bottom: 20px; /* Espace entre les conversations */
+    padding-bottom: 10px; /* Espace à l'intérieur du conteneur de la conversation */
+}
+
+.prompt, .response {
+    margin-bottom: 10px; /* Espace entre le prompt et la réponse */
+}
+
+.prompt {
+    font-weight: bold;
+    color: #dfcbcb; /* Couleur du texte du prompt */
+}
+
+.response {
+    color: #ffffff; /* Couleur du texte de la réponse */
+}
