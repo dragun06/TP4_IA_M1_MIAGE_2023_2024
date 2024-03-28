@@ -15,6 +15,6 @@ curl https://api.openai.com/v1/completions \
   -d '{
     "model": "gpt-3.5-turbo-instruct",
     "prompt": "Propose un nom pour la MIAGE de Nice: ",
-    "max_tokens": 7,
+    "max_tokens": 200,
     "temperature": 1
   }'
