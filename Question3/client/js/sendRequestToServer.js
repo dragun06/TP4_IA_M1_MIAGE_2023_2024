@@ -1,8 +1,10 @@
+// Importation de la fonction depuis le fichier dallE.js
 import { getImageFromDallE } from './dallE.js';
 
 const endpointURL = 'http://localhost:3001/chat';
 
-let outputElement, submitButton, inputElement, historyElement, butonElement;
+let outputElement, submitButton, inputElement, historyElement, buttonElement;
+
 
 window.onload = init;
 
@@ -13,8 +15,8 @@ function init() {
 
     inputElement = document.querySelector('input');
     historyElement = document.querySelector('.history');
-    butonElement = document.querySelector('button');
-    butonElement.onclick = clearInput;
+    buttonElement = document.querySelector('button');
+    buttonElement.onclick = clearInput;
 }
 
 function clearInput() {
@@ -22,46 +24,80 @@ function clearInput() {
 }
 
 async function getMessage() {
-    let prompt = inputElement.value;
-    // on met le prompt en minuscules
-    prompt = prompt.toLowerCase();
+    let prompt = inputElement.value.trim();
+    let styleOption = document.querySelector('#style-option').value;
+    let timeOfDay = document.querySelector('#time-of-day').value;
+    let styleOptions = 'avec les options de style suivantes : ' + styleOption + 'et' + timeOfDay;
+
+// Utilisez `styleOption` et `timeOfDay` pour construire les prompts complets
 
 
-    // TODO ne le faire que si le prompt commence par "/image", sinon appeler
-    // le web service qui répond avec GPT-3.5 comme dans la question 2
+    if (prompt.startsWith('/image')) {
+        // On retire le '/image' pour traiter la chaîne de caractères suivante
+        let description = prompt.substring('/image'.length).trim();
+        let fullDescription = `génère un prompt pour Dall-E afin d'obtenir une image de ${description}, ${styleOptions}`;
+        // Demander à GPT-3.5 de générer une description pour Dall-E
+        console.log('Prompt pour Dall-E:', fullDescription);
+        generateImagePrompt(fullDescription);
+    } else {
+        getResponseFromServer(prompt); // Traitement normal pour les autres prompts
+    }
 
-    // On envoie une requête de génération d'image au serveur
+    // Vider l'input après la soumission
+    inputElement.value = '';
+}
+
+async function generateImagePrompt(description) {
+    try {
+        const promptData = new FormData();
+        promptData.append('prompt', `Créez une description détaillée d'une image de : ${description}`);
+
+        // Appel à GPT-3.5 pour générer une description d'image pour Dall-E
+        const response = await fetch(endpointURL, {
+            method: 'POST',
+            body: promptData
+        });
+
+        const data = await response.json();
+        const generatedPrompt = data.choices[0].message.content;
+
+        console.log('Prompt Généré pour Dall-E:', generatedPrompt);
+        // Envoi du prompt généré à Dall-E
+        getImage(generatedPrompt);
+    } catch (error) {
+        console.error('Erreur lors de la génération du prompt pour Dall-E:', error);
+    }
+}
+
+async function getImage(prompt) {
     let images = await getImageFromDallE(prompt);
     console.log(images);
 
-    images.data.forEach(imageObj => {
-        const imageContainer = document.createElement('div');
-        imageContainer.classList.add('image-container');
+    if (Array.isArray(images.data)) {
+        images.data.forEach(imageObj => {
+            // Assurez-vous que imageObj.url est une chaîne de caractères
+            if (typeof imageObj.url === 'string') {
+                const imageContainer = document.createElement('div');
+                imageContainer.classList.add('image-container');
 
-        const imgElement = document.createElement('img');
-        imgElement.src = imageObj.url;
-        imgElement.width = 256;
-        imgElement.height = 256;
+                const imgElement = document.createElement('img');
+                imgElement.src = imageObj.url; // Utilisez l'URL de l'image
+                imgElement.alt = "Image générée";
+                imgElement.width = 256;
+                imgElement.height = 256;
 
-        imageContainer.append(imgElement);
-
-        outputElement.append(imageContainer);
-    });
-
-    // on vide l'input
-    inputElement.value = '';
+                imageContainer.appendChild(imgElement);
+                outputElement.appendChild(imageContainer);
+            }
+        });
+    }
 }
 
 async function getResponseFromServer(prompt) {
     try {
-        // On envoie le contenu du prompt dans un FormData (eq. formulaires multipart)
         const promptData = new FormData();
         promptData.append('prompt', prompt);
 
-        // Envoi de la requête POST par fetch, avec le FormData dans la propriété body
-        // côté serveur on récupèrera dans req.body.prompt la valeur du prompt,
-        // avec nodeJS on utilisera le module multer pour récupérer les donénes 
-        // multer gère les données multipart/form-data
         const response = await fetch(endpointURL, {
             method: 'POST',
             body: promptData
@@ -69,15 +105,11 @@ async function getResponseFromServer(prompt) {
 
         const data = await response.json();
 
-        console.log(data);
-        const chatGptReponseTxt = data.choices[0].message.content;
-        // On cree un element p pour la réponse
+        const chatGptResponseTxt = data.choices[0].message.content;
         const pElementChat = document.createElement('p');
-        pElementChat.textContent = chatGptReponseTxt;
-        // On ajoute la réponse dans le div output
+        pElementChat.textContent = chatGptResponseTxt;
         outputElement.append(pElementChat);
 
-        // Ajout dans l'historique sur la gauche
         if (data.choices[0].message.content) {
             const pElement = document.createElement('p');
             pElement.textContent = inputElement.value;
@@ -90,4 +122,3 @@ async function getResponseFromServer(prompt) {
         console.log(error);
     }
 }
-
